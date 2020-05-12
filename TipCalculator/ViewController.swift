@@ -9,7 +9,11 @@
 import UIKit
 
 class ViewController: UIViewController, UITextFieldDelegate, UIScrollViewDelegate {
-    private let scrollView =  UIScrollView()
+    private let scrollView :  UIScrollView = {
+        let v = UIScrollView()
+        v.translatesAutoresizingMaskIntoConstraints = false
+        return v
+    }()
     
     private let billAmountTextField : UITextField = {
         let tf = UITextField()
@@ -18,10 +22,9 @@ class ViewController: UIViewController, UITextFieldDelegate, UIScrollViewDelegat
         let rgba = CGColor.init(srgbRed: 6/255, green: 214/255, blue: 160/255, alpha: 1.0)
         tf.layer.borderColor = rgba
         tf.layer.borderWidth = 1
-        tf.minimumFontSize = 30
+        tf.minimumFontSize = 50
         tf.textAlignment = .center
         tf.keyboardType = .numberPad
-        
         return tf
     }()
     
@@ -78,75 +81,77 @@ class ViewController: UIViewController, UITextFieldDelegate, UIScrollViewDelegat
         slider.widthAnchor.constraint(equalToConstant: 300).isActive = true
         slider.addTarget(self, action: #selector(changeLabel), for: .valueChanged)
         slider.addTarget(self, action: #selector(calcTip), for: .valueChanged)
-        //        slider.thumbTintColor = UIColor(red: 255/255, green: 196/255, blue: 61/255, alpha: 1.0)
         return slider
     }()
     
-    
+    let emptyView: UIView = {
+        let v = UIView()
+        v.translatesAutoresizingMaskIntoConstraints = false
+        return v
+    }()
     
     override func viewDidLoad() {
         super.viewDidLoad()
         // Do any additional setup after loading the view.
         self.billAmountTextField.delegate = self
-        
-        //        registerForKeyboardNotification()
+        registerForKeyboardNotification()
+        view.addGestureRecognizer(UITapGestureRecognizer(target: self, action: #selector(dismissKeyboard)))
         setup()
-        
     }
     
     private func setup() {
         view.backgroundColor = UIColor(red: 242/255, green: 248/255, blue: 245/255, alpha: 1.0)
+        scrollView.contentSize = CGSize(width: view.frame.width, height: view.frame.height)
+        scrollView.frame = CGRect(x: 0, y: 0, width: view.frame.width, height: UIScreen.main.bounds.height)
+        scrollView.delegate = self
         
-        
-        //        scrollView.isScrollEnabled = true
-        //        scrollView.showsVerticalScrollIndicator = true
-        //        sv.translatesAutoresizingMaskIntoConstraints = false
-        //        scrollView.delegate = self
-        //        scrollView.frame = CGRect(x: 0, y: 0, width: view.frame.width, height: view.frame.height)
-        //        scrollView.contentSize = CGSize(width: view.frame.width, height: view.frame.height)
-        //        view.addSubview(scrollView)
-        
-        let vStackView = UIStackView(arrangedSubviews: [tipAmountLabel, totalLabel, billAmountTextField, tipPercentageLabel, adjustTipPercentage, percentageLabel, calcButton])
+        let vStackView = UIStackView(arrangedSubviews: [emptyView,tipAmountLabel, totalLabel, billAmountTextField, tipPercentageLabel, adjustTipPercentage, percentageLabel, emptyView])
         vStackView.axis = .vertical
         vStackView.translatesAutoresizingMaskIntoConstraints = false
         vStackView.alignment = .center
-        vStackView.distribution = .fillEqually
+        vStackView.distribution = .equalSpacing
         vStackView.spacing = 20
-        //        scrollView.addSubview(vStackView)
-        view.addSubview(vStackView)
+        view.addSubview(scrollView)
+        scrollView.addSubview(vStackView)
         
         NSLayoutConstraint.activate([
-            //            scrollView.centerXAnchor.constraint(equalTo: view.centerXAnchor),
-            //            scrollView.centerYAnchor.constraint(equalTo: view.centerYAnchor),
+            scrollView.leftAnchor.constraint(equalTo: view.leftAnchor, constant: 8.0),
+            scrollView.rightAnchor.constraint(equalTo: view.rightAnchor, constant: 8.0),
+            scrollView.topAnchor.constraint(equalTo: view.topAnchor, constant: -8.0),
+            scrollView.bottomAnchor.constraint(equalTo: view.bottomAnchor, constant: -8.0),
             vStackView.centerXAnchor.constraint(equalTo: view.centerXAnchor),
-            vStackView.centerYAnchor.constraint(equalTo: view.centerYAnchor),
+            vStackView.centerYAnchor.constraint(equalTo: scrollView.centerYAnchor),
             billAmountTextField.leftAnchor.constraint(equalTo: vStackView.leftAnchor),
             billAmountTextField.rightAnchor.constraint(equalTo: vStackView.rightAnchor),
+            billAmountTextField.heightAnchor.constraint(equalToConstant: 40),
             percentageLabel.leftAnchor.constraint(equalTo: vStackView.leftAnchor),
             percentageLabel.rightAnchor.constraint(equalTo: vStackView.rightAnchor),
         ])
     }
     
-    //    private func registerForKeyboardNotification() {
-    //      NotificationCenter.default.addObserver(self, selector: #selector(keyboardWasShown(_:)), name: UIResponder.keyboardDidShowNotification, object: nil)
-    //      NotificationCenter.default.addObserver(self, selector: #selector(keyboardWillBeHidden(_:)), name: UIResponder.keyboardWillHideNotification, object: nil)
-    //    }
-    //
-    //    @objc func keyboardWasShown(_ notification: Notification) {
-    //      // 1. get the size of the keyboard
-    //      guard let info = notification.userInfo, let keyboardFrame = info[UIResponder.keyboardFrameBeginUserInfoKey] as? NSValue else { return }
-    //      let keyboardHeight = keyboardFrame.cgRectValue.size.height
-    //      // 2. scroll scrollview's content up
-    //      let contentInsets = UIEdgeInsets(top: 0, left: 0, bottom: keyboardHeight, right: 0)
-    //      scrollView.contentInset = contentInsets
-    //      scrollView.scrollIndicatorInsets = contentInsets
-    //    }
-    //
-    //    @objc func keyboardWillBeHidden(_ notification: Notification) {
-    //      scrollView.contentInset = UIEdgeInsets.zero
-    //      scrollView.scrollIndicatorInsets = UIEdgeInsets.zero
-    //    }
-    //
+    @objc func dismissKeyboard(_ sender: UITapGestureRecognizer) {
+        view.endEditing(true)
+    }
+    
+    
+    private func registerForKeyboardNotification() {
+        NotificationCenter.default.addObserver(self, selector: #selector(keyboardWasShown(_:)), name: UIResponder.keyboardDidShowNotification, object: nil)
+        NotificationCenter.default.addObserver(self, selector: #selector(keyboardWillBeHidden(_:)), name: UIResponder.keyboardWillHideNotification, object: nil)
+    }
+    
+    @objc func keyboardWasShown(_ notification: Notification) {
+        guard let info = notification.userInfo, let keyboardFrame = info[UIResponder.keyboardFrameBeginUserInfoKey] as? NSValue else { return }
+        let keyboardHeight = keyboardFrame.cgRectValue.size.height
+        let contentInsets = UIEdgeInsets(top: 0, left: 0, bottom: keyboardHeight + 200, right: 0)
+        scrollView.contentInset = contentInsets
+        scrollView.scrollIndicatorInsets = contentInsets
+    }
+    
+    @objc func keyboardWillBeHidden(_ notification: Notification) {
+        scrollView.contentInset = UIEdgeInsets.zero
+        scrollView.scrollIndicatorInsets = UIEdgeInsets.zero
+    }
+    
     @objc private func changeLabel(_ sender: UISlider!) {
         let tipRate = floor(Double(sender.value))
         percentageLabel.text = String(format: "%.0f", tipRate) + " %"
@@ -162,20 +167,5 @@ class ViewController: UIViewController, UITextFieldDelegate, UIScrollViewDelegat
             tipAmountLabel.text = String(format: "$ %.2f", tip)
         }
     }
-    
-    override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
-        self.view.endEditing(true)
-    }
-    
-    //    @objc private func calcTip(_ sender: UIButton!){
-    //        guard billAmountTextField.text != nil else {
-    //            return
-    //        }
-    //        let tipRate = floor(Double(adjustTipPercentage.value)) / 100
-    //        if let amountBill = billAmountTextField.text {
-    //            let tip = atof(amountBill) * tipRate
-    //            tipAmountLabel.text = String(format: "$ %.2f", tip)
-    //        }
-    //    }
 }
 
